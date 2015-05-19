@@ -1,7 +1,7 @@
 import struct
 from binascii import crc32
 
-__version__ = "0.2"
+__version__ = "0.3"
 __author__ = "Rossen Georgiev"
 
 
@@ -87,7 +87,7 @@ class VPK:
         """
         Reads VPK file header from the file
         """
-        with open(self.vpk_path, 'r') as f:
+        with open(self.vpk_path, 'rb') as f:
             (self.signature,
              self.version,
              self.tree_length
@@ -131,7 +131,7 @@ class VPK:
 
         self.tree = {}
         self.file_count = 0
-        with open(self.vpk_path, 'r') as f:
+        with open(self.vpk_path, 'rb') as f:
             f.seek(self.header_length)
 
             while True:
@@ -192,6 +192,24 @@ class VPKFile(file):
 
         super(VPKFile, self).__init__(vpk_path.replace("dir.", "%03d." % self.archive_index), 'rb')
         super(VPKFile, self).seek(self.offset)
+
+    def save(self, path):
+        """
+        Save the file to the specified path
+        """
+        # remember and restore file position
+        pos = self.tell()
+        self.seek(0)
+
+        with open(path, 'wb') as output:
+            output.truncate(self.length)
+            while True:
+                buf = self.read(1024)
+                if buf == b'':
+                    break
+                output.write(buf)
+
+        self.seek(pos)
 
     def verify(self):
         """
@@ -258,14 +276,21 @@ class VPKFile(file):
 
         super(VPKFile, self).seek(self.offset + offset)
 
+    def readlines(self):
+        return [line for line in self]
+
+    def readline(self, sizehint=-1):
+        left = self.length - self.tell()
+        return super(VPKFile, self).readline(left if sizehint == -1 else min(left, sizehint))
+
     def read(self, length=-1, next_read=False):
         if not next_read and self.readbuffer != b'':
             raise ValueError("Mixing iteration and read methods would lose data")
 
-        if super(VPKFile, self).tell() >= self.offset + self.length:
+        if self.tell() >= self.length:
             return b''
         else:
-            left = self.offset + self.length - super(VPKFile, self).tell()
+            left = self.length - self.tell()
             return super(VPKFile, self).read(left if length == -1 else min(left, length))
 
     def write(self, seq):

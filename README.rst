@@ -63,6 +63,13 @@ possible.
             "ms_per_frame" "100"
     ...
 
+Or if you need to extract a file.
+
+.. code:: python
+
+    pakfile.save("./emoticons.txt")
+
+
 .. |pypi| image:: https://img.shields.io/pypi/v/vpk.svg?style=flat&label=latest%20version
     :target: https://pypi.python.org/pypi/vpk
     :alt: Latest version released on PyPi
