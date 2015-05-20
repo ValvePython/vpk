@@ -170,7 +170,7 @@ class VPK:
                          x['archive_offset'],
                          x['file_length'],
                          _
-                         ) = struct.unpack("IhHIIH", f.read(18))
+                         ) = struct.unpack("IHHIIH", f.read(18))
 
                         if x['preload_length']:
                             x['preload'] = f.read(x['preload_length'])
