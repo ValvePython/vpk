@@ -135,6 +135,9 @@ class VPK:
             f.seek(self.header_length)
 
             while True:
+                if self.version > 0 and f.tell() > self.tree_length + self.header_length:
+                    raise ValueError("Error parsing index (out of bounds)")
+
                 ext = self._read_sz(f)
                 if ext == b'':
                     break
@@ -169,8 +172,11 @@ class VPK:
                          x['archive_index'],
                          x['archive_offset'],
                          x['file_length'],
-                         _
+                         term,
                          ) = struct.unpack("IHHIIH", f.read(18))
+
+                        if term != 0xffff:
+                            raise ValueError("Error while parsing index")
 
                         if x['preload_length']:
                             x['preload'] = f.read(x['preload_length'])
