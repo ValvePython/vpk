@@ -1,7 +1,7 @@
 import struct
 from binascii import crc32
 
-__version__ = "0.3"
+__version__ = "0.4"
 __author__ = "Rossen Georgiev"
 
 
@@ -160,16 +160,16 @@ class VPK:
                         self.file_count += 1
 
                         x = root["{}.{}".format(name, ext)] = {
-                            'payload': b''
+                            'preload': b''
                             }
 
                         (x['crc32'],
                          x['preload_length'],
                          x['archive_index'],
-                         x['offset'],
-                         x['length'],
+                         x['archive_offset'],
+                         x['file_length'],
                          _
-                         ) = struct.unpack("IHHIIH", f.read(18))
+                         ) = struct.unpack("IhHIIH", f.read(18))
 
                         if x['preload_length']:
                             x['preload'] = f.read(x['preload_length'])
@@ -181,17 +181,29 @@ class VPKFile(file):
 
     Should act like a regular file object. No garantees
     """
+    readbuffer = b''
 
     def __init__(self, vpk_path, **kw):
         self.vpk_path = vpk_path
         self.vpk_meta = kw
-        self.readbuffer = b''
 
         for k, v in kw.items():
             setattr(self, k, v)
 
+        if self.vpk_meta['preload'] != b'':
+            self.vpk_meta['preload'] = '...'
+
+        # total file length
+        self.length = self.preload_length + self.file_length
+        # offset of entire file
+        self.offset = 0
+
+        if self.file_length == 0:
+            self.vpk_path = None
+            return
+
         super(VPKFile, self).__init__(vpk_path.replace("dir.", "%03d." % self.archive_index), 'rb')
-        super(VPKFile, self).seek(self.offset)
+        super(VPKFile, self).seek(self.archive_offset)
 
     def save(self, path):
         """
@@ -229,7 +241,7 @@ class VPKFile(file):
     def __repr__(self):
         return "%s(%s, %s)" % (
             self.__class__.__name__,
-            repr(self.name),
+            repr(self.name) if self.file_length > 0 else None,
             ', '.join(["%s=%s" % (k, repr(v)) for k, v in self.vpk_meta.items()])
             )
 
@@ -252,7 +264,7 @@ class VPKFile(file):
                 raise StopIteration
 
             # produce another line
-            pos = self.readbuffer.find('\n')
+            pos = self.readbuffer.find(b'\n')
             if pos > -1:
                 line = self.readbuffer[:pos+1]
                 self.readbuffer = self.readbuffer[pos+1:]
@@ -268,30 +280,57 @@ class VPKFile(file):
         super(VPKFile, self).close()
 
     def tell(self):
-        return super(VPKFile, self).tell() - self.offset
+        return self.offset
 
     def seek(self, offset):
         if offset < 0:
             raise IOError("Invalid argument")
 
-        super(VPKFile, self).seek(self.offset + offset)
+        self.offset = offset
+        if self.file_length > 0:
+            super(VPKFile, self).seek(self.archive_offset + max(offset - self.preload_length, 0))
 
     def readlines(self):
         return [line for line in self]
 
-    def readline(self, sizehint=-1):
-        left = self.length - self.tell()
-        return super(VPKFile, self).readline(left if sizehint == -1 else min(left, sizehint))
+    def readline(self, a=False):
+        buf = b''
+        while True:
+            chunk = self.read(512)
+            if chunk == b'':
+                break
+
+            pos = chunk.find(b'\n')
+            if pos > -1:
+                pos += 1  # include \n
+                buf += chunk[:pos]
+                self.seek(self.offset - (len(chunk) - pos))
+                break
+
+            buf += chunk
+
+        return buf
 
     def read(self, length=-1, next_read=False):
         if not next_read and self.readbuffer != b'':
             raise ValueError("Mixing iteration and read methods would lose data")
-
-        if self.tell() >= self.length:
+        if length == 0 or self.offset >= self.length:
             return b''
-        else:
-            left = self.length - self.tell()
-            return super(VPKFile, self).read(left if length == -1 else min(left, length))
+
+        data = b''
+
+        if self.offset <= self.preload_length:
+            data += self.preload[self.offset:self.offset+length if length > -1 else None]
+            self.offset += len(data)
+            if length > 0:
+                length = max(length - len(data), 0)
+
+        if self.file_length > 0 and self.offset >= self.preload_length:
+            left = self.file_length - (self.offset - self.preload_length)
+            data += super(VPKFile, self).read(left if length == -1 else min(left, length))
+            self.offset += left if length == -1 else min(left, length)
+
+        return data
 
     def write(self, seq):
         raise NotImplementedError("write method is not supported")
