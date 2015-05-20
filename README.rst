@@ -1,4 +1,4 @@
-|pypi| |license|
+|pypi| |license| |master_build|
 
 VPK is Valve's file format for storing game assets.
 This module is able to read the index and individual files.
@@ -78,3 +78,6 @@ Or if you need to extract a file.
     :target: https://pypi.python.org/pypi/vpk
     :alt: MIT License
 
+.. |master_build| image:: https://img.shields.io/travis/rossengeorgiev/vpk-python/master.svg?style=flat&label=master%20build
+    :target: http://travis-ci.org/rossengeorgiev/vpk-python
+    :alt: Build status of master branch
