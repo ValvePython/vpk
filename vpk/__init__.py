@@ -145,12 +145,13 @@ class VPK:
                         break
 
                     root = self.tree
-                    path = path.split('/')
-                    for folder in path:
-                        try:
-                            root = root[folder]
-                        except KeyError:
-                            root[folder] = root = {}
+                    if path != b' ':
+                        path = path.split('/')
+                        for folder in path:
+                            try:
+                                root = root[folder]
+                            except KeyError:
+                                root[folder] = root = {}
 
                     while True:
                         name = self._read_sz(f)
