@@ -1,5 +1,6 @@
 import struct
 from binascii import crc32
+from io import FileIO
 
 __version__ = "0.4"
 __author__ = "Rossen Georgiev"
@@ -139,16 +140,16 @@ class VPK:
                     raise ValueError("Error parsing index (out of bounds)")
 
                 ext = self._read_sz(f)
-                if ext == b'':
+                if ext == '':
                     break
 
                 while True:
                     path = self._read_sz(f)
-                    if path == b'':
+                    if path == '':
                         break
 
                     root = self.tree
-                    if path != b' ':
+                    if path != ' ':
                         path = path.split('/')
                         for folder in path:
                             try:
@@ -158,12 +159,12 @@ class VPK:
 
                     while True:
                         name = self._read_sz(f)
-                        if name == b'':
+                        if name == '':
                             break
 
                         self.file_count += 1
 
-                        x = root["{}.{}".format(name, ext)] = {
+                        x = root["{0}.{1}".format(name, ext)] = {
                             'preload': b''
                             }
 
@@ -182,7 +183,7 @@ class VPK:
                             x['preload'] = f.read(x['preload_length'])
 
 
-class VPKFile(file):
+class VPKFile(FileIO):
     """
     Wrapper class for files with VPK
 

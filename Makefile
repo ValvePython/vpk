@@ -16,7 +16,7 @@ help:
 	@echo "$$HELPBODY"
 
 init:
-	pip install -r requirements.txt
+	pip install nose
 
 test:
 	rm -f .coverage vpk/*.pyc tests/*.pyc
