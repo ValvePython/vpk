@@ -2,7 +2,7 @@ import struct
 from binascii import crc32
 from io import FileIO
 
-__version__ = "0.6"
+__version__ = "0.7"
 __author__ = "Rossen Georgiev"
 
 
