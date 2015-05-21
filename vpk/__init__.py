@@ -229,11 +229,8 @@ class VPKFile(FileIO):
 
         with open(path, 'wb') as output:
             output.truncate(self.length)
-            while True:
-                buf = self.read(1024)
-                if buf == b'':
-                    break
-                output.write(buf)
+            for chunk in iter(lambda: self.read(1024), ''):
+                output.write(chunk)
 
         self.seek(pos)
 
@@ -244,13 +241,18 @@ class VPKFile(FileIO):
         note: reset
         """
 
-        # remember and restore file position
+        # remember file pointer
         pos = self.tell()
         self.seek(0)
-        data = self.read()
+
+        checksum = 0
+        for chunk in iter(lambda: self.read(1024), ''):
+            checksum = crc32(chunk, checksum)
+
+        # restore file pointer
         self.seek(pos)
 
-        return self.crc32 == crc32(data) & 0xffffffff
+        return self.crc32 == checksum & 0xffffffff
 
     def __repr__(self):
         return "%s(%s, %s)" % (
@@ -312,11 +314,8 @@ class VPKFile(FileIO):
 
     def readline(self, a=False):
         buf = b''
-        while True:
-            chunk = self.read(512)
-            if chunk == b'':
-                break
 
+        for chunk in iter(lambda: self.read(512), ''):
             pos = chunk.find(b'\n')
             if pos > -1:
                 pos += 1  # include \n
