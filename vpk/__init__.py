@@ -65,14 +65,18 @@ class VPK:
         pass
 
     def _read_sz(self, f):
-        out = b""
-        while True:
-            c = f.read(1)
-            if c in [b'\x00', b'']:
-                break
-            out += c
+        buf = b''
 
-        return out.decode('ascii')
+        for chunk in iter(lambda: f.read(64), ''):
+            pos = chunk.find(b'\x00')
+            if pos > -1:
+                buf += chunk[:pos]
+                f.seek(f.tell() - (len(chunk) - (pos + 1)))
+                break
+
+            buf += chunk
+
+        return buf.decode('ascii')
 
     def get_file(self, path):
         """
