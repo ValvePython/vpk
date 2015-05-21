@@ -67,7 +67,7 @@ class VPK:
     def _read_sz(self, f):
         buf = b''
 
-        for chunk in iter(lambda: f.read(64), ''):
+        for chunk in iter(lambda: f.read(64), b''):
             pos = chunk.find(b'\x00')
             if pos > -1:
                 buf += chunk[:pos]
@@ -233,7 +233,7 @@ class VPKFile(FileIO):
 
         with open(path, 'wb') as output:
             output.truncate(self.length)
-            for chunk in iter(lambda: self.read(1024), ''):
+            for chunk in iter(lambda: self.read(1024), b''):
                 output.write(chunk)
 
         self.seek(pos)
@@ -250,7 +250,7 @@ class VPKFile(FileIO):
         self.seek(0)
 
         checksum = 0
-        for chunk in iter(lambda: self.read(1024), ''):
+        for chunk in iter(lambda: self.read(1024), b''):
             checksum = crc32(chunk, checksum)
 
         # restore file pointer
@@ -319,7 +319,7 @@ class VPKFile(FileIO):
     def readline(self, a=False):
         buf = b''
 
-        for chunk in iter(lambda: self.read(512), ''):
+        for chunk in iter(lambda: self.read(512), b''):
             pos = chunk.find(b'\n')
             if pos > -1:
                 pos += 1  # include \n
