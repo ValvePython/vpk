@@ -2,7 +2,7 @@ import struct
 from binascii import crc32
 from io import FileIO
 
-__version__ = "0.5"
+__version__ = "0.6"
 __author__ = "Rossen Georgiev"
 
 
@@ -57,6 +57,12 @@ class VPK:
 
     def __len__(self):
         return self.file_count
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        pass
 
     def _read_sz(self, f):
         out = b""
@@ -261,6 +267,9 @@ class VPKFile(FileIO):
 
     def __iter__(self):
         return self
+
+    def __next__(self):
+        return self.next()
 
     def next(self):
         while True:
