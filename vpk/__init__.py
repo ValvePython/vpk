@@ -202,8 +202,6 @@ class VPKFile(FileIO):
         self.vpk_path = vpk_path
         self.vpk_meta = kw
 
-        self.readbuffer = b''
-
         for k, v in kw.items():
             setattr(self, k, v)
 
@@ -314,9 +312,7 @@ class VPKFile(FileIO):
 
         return buf
 
-    def read(self, length=-1, next_read=False):
-        if not next_read and self.readbuffer != b'':
-            raise ValueError("Mixing iteration and read methods would lose data")
+    def read(self, length=-1):
         if length == 0 or self.offset >= self.length:
             return b''
 
