@@ -11,17 +11,15 @@ class VPK:
     Wrapper for reading Valve's VPK files
     """
 
-    # header
-    signature = 0
-    version = 0
-    tree_length = 0
-    header_length = 0
-
-    tree = {}
-    file_count = 0
-    vpk_path = ''
-
     def __init__(self, vpk_path, read_header_only=False):
+        # header
+        self.signature = 0
+        self.version = 0
+        self.tree_length = 0
+        self.header_length = 0
+
+        self.tree = {}
+        self.file_count = 0
         self.vpk_path = vpk_path
 
         self.read_header()
@@ -199,11 +197,12 @@ class VPKFile(FileIO):
 
     Should act like a regular file object. No garantees
     """
-    readbuffer = b''
 
     def __init__(self, vpk_path, **kw):
         self.vpk_path = vpk_path
         self.vpk_meta = kw
+
+        self.readbuffer = b''
 
         for k, v in kw.items():
             setattr(self, k, v)
