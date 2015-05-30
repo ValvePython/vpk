@@ -277,26 +277,10 @@ class VPKFile(FileIO):
         return self.next()
 
     def next(self):
-        while True:
-            chunk = self.read(512, next_read=True)
-            self.readbuffer += chunk
-
-            # the readbuffer is only empty when we've reached EOF
-            if b'' == self.readbuffer:
-                raise StopIteration
-
-            # produce another line
-            pos = self.readbuffer.find(b'\n')
-            if pos > -1:
-                line = self.readbuffer[:pos+1]
-                self.readbuffer = self.readbuffer[pos+1:]
-                return line
-
-            # we've reached EOF, produce whats left in the readbuffer
-            if b'' == chunk:
-                line = self.readbuffer
-                self.readbuffer = b''
-                return line
+        line = self.readline()
+        if line == b'':
+            raise StopIteration
+        return line
 
     def close(self):
         super(VPKFile, self).close()
@@ -318,7 +302,7 @@ class VPKFile(FileIO):
     def readline(self, a=False):
         buf = b''
 
-        for chunk in iter(lambda: self.read(512), b''):
+        for chunk in iter(lambda: self.read(256), b''):
             pos = chunk.find(b'\n')
             if pos > -1:
                 pos += 1  # include \n
