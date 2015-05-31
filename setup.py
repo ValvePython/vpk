@@ -35,5 +35,5 @@ setup(
     ],
     keywords='valve vpk tf2 dota2 csgo dota',
     packages=['vpk'],
-    zip_safe=False,
+    zip_safe=True,
 )
