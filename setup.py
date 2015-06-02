@@ -14,7 +14,7 @@ setup(
     version=vpk.__version__,
     description='Library for reading/extracting files from VPK',
     long_description=long_description,
-    url='https://github.com/rossengeorgiev/vpk-python',
+    url='https://github.com/ValvePython/vpk',
     author='Rossen Georgiev',
     author_email='hello@rgp.io',
     license='MIT',

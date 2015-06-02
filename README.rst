@@ -78,6 +78,6 @@ Or if you need to extract a file.
     :target: https://pypi.python.org/pypi/vpk
     :alt: MIT License
 
-.. |master_build| image:: https://img.shields.io/travis/rossengeorgiev/vpk-python/master.svg?style=flat&label=master%20build
-    :target: http://travis-ci.org/rossengeorgiev/vpk-python
+.. |master_build| image:: https://img.shields.io/travis/ValvePython/vpk/master.svg?style=flat&label=master%20build
+    :target: http://travis-ci.org/ValvePython/vpk
     :alt: Build status of master branch
