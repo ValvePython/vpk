@@ -76,21 +76,31 @@ class VPK:
 
         return buf.decode('ascii')
 
+    def __getitem__(self, key):
+        """
+        Returns VPKFile instance
+        """
+        return self.get_file(key)
+
     def get_file(self, path):
         """
         Returns VPKFile instance for the given path
         """
+        node = self.get_file_meta(path)
+        return VPKFile(self.vpk_path, filepath=path, **node)
 
+    def get_file_meta(self, path):
         node = self.tree
         for level in path.split('/'):
             try:
                 node = node[level]
             except KeyError:
-                raise ValueError("Path doesn't exist")
+                raise KeyError("Path doesn't exist")
 
-        assert 'crc32' in node, "Path doesn't lead to a single file"
+        if 'crc32' not in node or isinstance(node['crc32'], dict):
+            raise KeyError("Path doesn't lead to a file")
 
-        return VPKFile(self.vpk_path, filepath=path, **node)
+        return node
 
     def read_header(self):
         """
