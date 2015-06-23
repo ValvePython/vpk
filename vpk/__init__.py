@@ -197,6 +197,9 @@ class VPK:
                         if term != 0xffff:
                             raise ValueError("Error while parsing index")
 
+                        if x['archive_index'] == 0x7fff:
+                            x['archive_offset'] += self.header_length + self.tree_length
+
                         if x['preload_length']:
                             x['preload'] = f.read(x['preload_length'])
 
