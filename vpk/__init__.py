@@ -1,9 +1,17 @@
 import struct
 from binascii import crc32
 from io import FileIO
+from io import open as fopen
 
-__version__ = "0.9"
+__version__ = "0.10"
 __author__ = "Rossen Georgiev"
+
+
+def open(vpk_path, **kwargs):
+    """
+    Returns a VPK instance for specified path. Same argumets as VPK class.
+    """
+    return VPK(vpk_path, **kwargs)
 
 
 class VPK:
@@ -106,7 +114,7 @@ class VPK:
         """
         Reads VPK file header from the file
         """
-        with open(self.vpk_path, 'rb') as f:
+        with fopen(self.vpk_path, 'rb') as f:
             (self.signature,
              self.version,
              self.tree_length
@@ -150,7 +158,7 @@ class VPK:
 
         self.tree = {}
         self.file_count = 0
-        with open(self.vpk_path, 'rb') as f:
+        with fopen(self.vpk_path, 'rb') as f:
             f.seek(self.header_length)
 
             while True:
@@ -241,7 +249,7 @@ class VPKFile(FileIO):
         pos = self.tell()
         self.seek(0)
 
-        with open(path, 'wb') as output:
+        with fopen(path, 'wb') as output:
             output.truncate(self.length)
             for chunk in iter(lambda: self.read(1024), b''):
                 output.write(chunk)

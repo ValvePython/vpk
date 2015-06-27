@@ -23,7 +23,7 @@ The VPK instance is iterable in the standard ways and produces paths to files
 
     import vpk
 
-    pak1 = vpk.VPK("/d/Steam/steamapps/common/dota 2 beta/dota/pak01_dir.vpk")
+    pak1 = vpk.open("/d/Steam/steamapps/common/dota 2 beta/dota/pak01_dir.vpk")
 
     for filepath in pak1:
         print filepath
@@ -48,6 +48,7 @@ possible.
 .. code:: python
 
     pakfile = pak1.get_file("scripts/emoticons.txt")
+    pakfile = pak1["scripts/emoticons.txt"]
     print pakfile.read().decode('utf-16le')
 
 .. code:: text

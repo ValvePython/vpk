@@ -4,7 +4,7 @@ import vpk
 
 class testcase_vpk(unittest.TestCase):
     def setUp(self):
-        self.pak = vpk.VPK('./tests/test_dir.vpk')
+        self.pak = vpk.open('./tests/test_dir.vpk')
 
     def test_verify_file_crc32(self):
         for path in self.pak:
