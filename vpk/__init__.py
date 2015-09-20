@@ -108,13 +108,13 @@ class NewVPK:
 
             # write file tree
             for ext in self.tree:
-                f.write("{0}\x00".format(ext))
+                f.write("{0}\x00".format(ext).encode('latin-1'))
 
                 for relpath in self.tree[ext]:
-                    f.write("{0}\x00".format(relpath))
+                    f.write("{0}\x00".format(relpath).encode('latin-1'))
 
                     for filename in self.tree[ext][relpath]:
-                        f.write("{0}\x00".format(filename))
+                        f.write("{0}\x00".format(filename).encode('latin-1'))
 
                         # append file data
                         metadata_offset = f.tell()
