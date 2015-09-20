@@ -4,7 +4,7 @@ from io import FileIO
 from io import open as fopen
 import os
 
-__version__ = "0.10"
+__version__ = "0.11"
 __author__ = "Rossen Georgiev"
 
 
