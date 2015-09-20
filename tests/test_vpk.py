@@ -1,5 +1,15 @@
 import unittest
 import vpk
+import os
+import errno
+import shutil
+
+def mktree(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
 
 
 class testcase_vpk(unittest.TestCase):
@@ -29,3 +39,28 @@ class testcase_vpk(unittest.TestCase):
 
     def test_testfile3_bin(self):
         self.assertEqual(b"OK", self.pak["a/b/c/d/testfile3.bin"].readline())
+
+
+class testcase_newvpk(unittest.TestCase):
+    def setUp(self):
+        self.pak = vpk.open('./tests/test_dir.vpk')
+
+    def test_vpk_creation(self):
+        temp = "./tempout"
+
+        for path in self.pak:
+            mktree(os.path.join(temp, *os.path.split(path)[:-1]))
+
+            self.pak[path].save(os.path.join(temp, path))
+
+        pak = vpk.new(temp)
+        newpak = pak.save_and_open(os.path.join(temp, "temp.vpk"))
+
+        for path in newpak:
+            self.assertTrue(newpak[path].verify())
+
+        if os.path.exists(temp):
+            shutil.rmtree(temp)
+
+
+

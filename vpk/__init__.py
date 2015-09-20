@@ -2,6 +2,7 @@ import struct
 from binascii import crc32
 from io import FileIO
 from io import open as fopen
+import os
 
 __version__ = "0.10"
 __author__ = "Rossen Georgiev"
@@ -12,6 +13,160 @@ def open(vpk_path, **kwargs):
     Returns a VPK instance for specified path. Same argumets as VPK class.
     """
     return VPK(vpk_path, **kwargs)
+
+
+def new(dir_path):
+    """
+    Returns a NewVPK instance for the specific path.
+    """
+    return NewVPK(dir_path)
+
+
+class NewVPK:
+    def __init__(self, path):
+        self.signature = 0x55aa1234
+        self.version = 1
+        self.tree_length = 0
+        self.header_length = 4*3
+
+        self.tree = {}
+        self.path = ''
+        self.file_count = 0
+
+        self.read_dir(path)
+
+    def __repr__(self):
+        return "%s('%s')" % (self.__class__.__name__, self.path)
+
+    def read_dir(self, path):
+        """
+        Reads the given path into the tree
+        """
+        self.tree = {}
+        self.file_count = 0
+        self.path = path
+
+        for root, _, filelist in os.walk(path):
+            rel = root[len(path)+1:]
+
+            # empty rel, means file is in root dir
+            if not rel:
+                rel = ' '
+
+            for filename in filelist:
+                filename = filename.split('.')
+                if len(filename) == 1:
+                    ext = ''
+                    filename = filename[0]
+                else:
+                    ext = filename[-1]
+                    filename = '.'.join(filename[:-1])
+
+
+                if ext not in self.tree:
+                    self.tree[ext] = {}
+                if rel not in self.tree[ext]:
+                    self.tree[ext][rel] = []
+
+                self.tree[ext][rel].append(filename)
+                self.file_count += 1
+
+        self.tree_length = self.calculate_tree_length()
+
+
+    def calculate_tree_length(self):
+        """
+        Walks the tree and calculate the tree length
+        """
+        tree_length = 0
+
+        for ext in self.tree:
+            tree_length += len(ext) + 2
+
+            for relpath in self.tree[ext]:
+                tree_length += len(relpath) + 2
+
+                for filename in self.tree[ext][relpath]:
+                    tree_length += len(filename) + 1 + 18
+
+        return tree_length + 1
+
+
+    def save(self, vpk_output_path):
+        """
+        Saves the VPK at the given path
+        """
+        with fopen(vpk_output_path, 'wb') as f:
+            # write VPK1 header
+            f.write(struct.pack("3I", self.signature,
+                                      self.version,
+                                      self.tree_length))
+
+            self.header_length = f.tell()
+
+            data_offset = self.header_length + self.tree_length
+
+            # write file tree
+            for ext in self.tree:
+                f.write("{0}\x00".format(ext))
+
+                for relpath in self.tree[ext]:
+                    f.write("{0}\x00".format(relpath))
+
+                    for filename in self.tree[ext][relpath]:
+                        f.write("{0}\x00".format(filename))
+
+                        # append file data
+                        metadata_offset = f.tell()
+                        file_offset = data_offset
+                        real_filename = filename if not ext else "{0}.{1}".format(filename, ext)
+                        checksum = 0
+                        f.seek(data_offset)
+
+                        with fopen(os.path.join(self.path,
+                                                '' if relpath == ' ' else relpath,
+                                                real_filename
+                                                ),
+                                   'rb') as pakfile:
+                            for chunk in iter(lambda: pakfile.read(1024), b''):
+                                checksum = crc32(chunk, checksum)
+                                f.write(chunk)
+
+                        data_offset = f.tell()
+                        file_length = f.tell() - file_offset
+                        f.seek(metadata_offset)
+
+                        # metadata
+
+                        # crc32
+                        # preload_length
+                        # archive_index
+                        # archive_offset
+                        # file_length
+                        # term
+                        f.write(struct.pack("IHHIIH", checksum & 0xFFffFFff,
+                                                      0,
+                                                      0x7fff,
+                                                      file_offset - self.tree_length - self.header_length,
+                                                      file_length,
+                                                      0xffff
+                                                      ))
+
+
+                    # next relpath
+                    f.write(b"\x00")
+                # next ext
+                f.write(b"\x00")
+            # end of file tree
+            f.write(b"\x00")
+
+
+    def save_and_open(self, path):
+        """
+        Saves the VPK file and returns VPK instance of it
+        """
+        self.save(path)
+        return VPK(path)
 
 
 class VPK:

@@ -71,6 +71,17 @@ Or if you need to extract a file.
     pakfile.save("./emoticons.txt")
 
 
+The module supports creating a basic VPK.
+Multi archive packs are not supported yet.
+
+.. code:: python
+
+    newpak = vpk.new("./some/directory")
+    newpak.save("file.vpk")
+
+    pak = newpak.save_and_open("file.vpk")
+
+
 .. |pypi| image:: https://img.shields.io/pypi/v/vpk.svg?style=flat&label=latest%20version
     :target: https://pypi.python.org/pypi/vpk
     :alt: Latest version released on PyPi
