@@ -18,7 +18,8 @@ class testcase_vpk(unittest.TestCase):
 
     def test_verify_file_crc32(self):
         for path in self.pak:
-            self.assertTrue(self.pak[path].verify())
+            with self.pak[path] as f:
+                self.assertTrue(f.verify())
 
     def test_file_count_as_list(self):
         self.assertTrue(len(self.pak) == len(list(self.pak)))
@@ -32,13 +33,15 @@ class testcase_vpk(unittest.TestCase):
                 self.assertEqual("line {0}".format(i).encode(), line.rstrip())
 
     def test_testfile2_txt(self):
-        i = 1
-        for line in self.pak["testdir/testfile2.txt"]:
-            self.assertEqual("line {0}".format(i).encode(), line.rstrip())
-            i += 1
+        with self.pak["testdir/testfile2.txt"] as f:
+            i = 1
+            for line in f:
+                self.assertEqual("line {0}".format(i).encode(), line.rstrip())
+                i += 1
 
     def test_testfile3_bin(self):
-        self.assertEqual(b"OK", self.pak["a/b/c/d/testfile3.bin"].readline())
+        with self.pak["a/b/c/d/testfile3.bin"] as f:
+            self.assertEqual(b"OK", f.readline())
 
 
 class testcase_newvpk(unittest.TestCase):
@@ -51,13 +54,15 @@ class testcase_newvpk(unittest.TestCase):
         for path in self.pak:
             mktree(os.path.join(temp, *os.path.split(path)[:-1]))
 
-            self.pak[path].save(os.path.join(temp, path))
+            with self.pak[path] as f:
+                f.save(os.path.join(temp, path))
 
         pak = vpk.new(temp)
         newpak = pak.save_and_open(os.path.join(temp, "temp.vpk"))
 
         for path in newpak:
-            self.assertTrue(newpak[path].verify())
+            with newpak[path] as f:
+                self.assertTrue(f.verify())
 
         if os.path.exists(temp):
             shutil.rmtree(temp)
