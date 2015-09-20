@@ -27,7 +27,6 @@ class VPK:
         self.header_length = 0
 
         self.tree = {}
-        self.file_count = 0
         self.vpk_path = vpk_path
 
         self.read_header()
@@ -40,29 +39,17 @@ class VPK:
         return "%s('%s'%s)" % (self.__class__.__name__, self.vpk_path, headonly)
 
     def __iter__(self):
-        def dir_list_generator(tree):
-            for k in tree:
-                if 'crc32' in tree[k]:
-                    yield k
-                else:
-                    for line in dir_list_generator(tree[k]):
-                        yield "%s/%s" % (k, line)
-
-        return dir_list_generator(self.tree)
+        return self.tree.__iter__()
 
     def items(self):
-        def dir_list_generator(tree):
+        def items_generator(tree):
             for path in tree:
-                if 'crc32' in tree[path]:
-                    yield path, tree[path]
-                else:
-                    for filename, meta in dir_list_generator(tree[path]):
-                        yield "%s/%s" % (path, filename), meta
+                yield path, self.get_file_meta(path)
 
-        return dir_list_generator(self.tree)
+        return items_generator(self.tree)
 
     def __len__(self):
-        return self.file_count
+        return len(self.tree)
 
     def __enter__(self):
         return self
@@ -94,21 +81,23 @@ class VPK:
         """
         Returns VPKFile instance for the given path
         """
-        node = self.get_file_meta(path)
-        return VPKFile(self.vpk_path, filepath=path, **node)
+        metadata = self.get_file_meta(path)
+        return VPKFile(self.vpk_path, filepath=path, **metadata)
 
     def get_file_meta(self, path):
-        node = self.tree
-        for level in path.split('/'):
-            try:
-                node = node[level]
-            except KeyError:
-                raise KeyError("Path doesn't exist")
+        """
+        Returns metadata for given file path
+        """
+        if path not in self.tree:
+            raise KeyError("Path doesn't exist")
 
-        if 'crc32' not in node or isinstance(node['crc32'], dict):
-            raise KeyError("Path doesn't lead to a file")
-
-        return node
+        return dict(zip(['preload',
+                         'crc32',
+                         'preload_length',
+                         'archive_index',
+                         'archive_offset',
+                         'file_length',
+                         ], self.tree[path]))
 
     def read_header(self):
         """
@@ -157,7 +146,6 @@ class VPK:
         """
 
         self.tree = {}
-        self.file_count = 0
         with fopen(self.vpk_path, 'rb') as f:
             f.seek(self.header_length)
 
@@ -173,43 +161,32 @@ class VPK:
                     path = self._read_sz(f)
                     if path == '':
                         break
-
-                    root = self.tree
                     if path != ' ':
-                        path = path.split('/')
-                        for folder in path:
-                            try:
-                                root = root[folder]
-                            except KeyError:
-                                root[folder] = root = {}
+                        path += '/'
+                    else:
+                        path = ''
 
                     while True:
                         name = self._read_sz(f)
                         if name == '':
                             break
 
-                        self.file_count += 1
+                        # crc32
+                        # preload_length
+                        # archive_index
+                        # archive_offset
+                        # file_length
+                        metadata = list(struct.unpack("IHHII", f.read(16)))
 
-                        x = root["{0}.{1}".format(name, ext)] = {
-                            'preload': b''
-                            }
-
-                        (x['crc32'],
-                         x['preload_length'],
-                         x['archive_index'],
-                         x['archive_offset'],
-                         x['file_length'],
-                         term,
-                         ) = struct.unpack("IHHIIH", f.read(18))
-
-                        if term != 0xffff:
+                        if struct.unpack("H", f.read(2))[0] != 0xffff:
                             raise ValueError("Error while parsing index")
 
-                        if x['archive_index'] == 0x7fff:
-                            x['archive_offset'] += self.header_length + self.tree_length
+                        if metadata[2] == 0x7fff:
+                            metadata[3] += self.header_length + self.tree_length
 
-                        if x['preload_length']:
-                            x['preload'] = f.read(x['preload_length'])
+                        metadata.insert(0, f.read(metadata[1]))
+
+                        self.tree["{0}{1}.{2}".format(path, name, ext)] = tuple(metadata)
 
 
 class VPKFile(FileIO):
