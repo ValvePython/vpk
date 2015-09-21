@@ -55,13 +55,13 @@ class NewVPK:
 
             for filename in filelist:
                 filename = filename.split('.')
-                if len(filename) == 1:
-                    ext = ''
-                    filename = filename[0]
-                else:
-                    ext = filename[-1]
-                    filename = '.'.join(filename[:-1])
+                if len(filename) <= 1:
+                    raise RuntimeError("Files without an extension are not supported: {0}".format(
+                                       repr(os.path.join(root, '.'.join(filename))),
+                                       ))
 
+                ext = filename[-1]
+                filename = '.'.join(filename[:-1])
 
                 if ext not in self.tree:
                     self.tree[ext] = {}
