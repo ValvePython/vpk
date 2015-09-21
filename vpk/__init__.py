@@ -47,7 +47,7 @@ class NewVPK:
         self.path = path
 
         for root, _, filelist in os.walk(path):
-            rel = root[len(path)+1:]
+            rel = root[len(path):].lstrip('/')
 
             # empty rel, means file is in root dir
             if not rel:
