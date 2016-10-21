@@ -2,22 +2,36 @@
 # Use this script to extract vpk's into materials, models, etc.
 # Author: Trevor Tomesh (github.com/trevortomesh)
 
+# usage: python3 vpktool.py [optional_args] [input path] [output path] 
+
 import vpk
 import os
+import sys
+import argparse
 
-inputPath = input('Path to VPK?: ')
+parser = argparse.ArgumentParser()
+parser.add_argument('inputPath')
+parser.add_argument('outPath')
+parser.add_argument("-v", "--verbose", help="increase output verbosity",
+                    action="store_true")
+
+
+args = parser.parse_args()
+inputPath = args.inputPath
+outputPath = args.outPath
 
 try:
 	pak1 = vpk.open(inputPath)
 
 except:
-	print("Can't find file at path"+inputPath)
+	print("Can't find file at path: "+inputPath)
+	sys.exit(0)
 	
-outputPath = input('Path to output?: ')
 
 for filepath in pak1:
 
-    print("extracting: " + filepath)
+    if args.verbose:	
+    	print("extracting: " + filepath)
     
     pakfile = pak1.get_file(filepath)
     pakfile = pak1[filepath]
