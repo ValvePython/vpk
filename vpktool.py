@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Easy VPK extractor
 # Use this script to extract vpk's into materials, models, etc.
 # Author: Trevor Tomesh (github.com/trevortomesh)
