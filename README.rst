@@ -3,6 +3,8 @@
 VPK is Valve's file format for storing game assets.
 This module is able to read the index and individual files.
 
+Tested and works on ``python2.6``, ``python2.7``, ``python3.2+``, ``pypy`` and ``pypy3``.
+
 
 Install
 -------
