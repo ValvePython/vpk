@@ -47,9 +47,10 @@ class testcase_vpk(unittest.TestCase):
 class testcase_newvpk(unittest.TestCase):
     def setUp(self):
         self.pak = vpk.open('./tests/test_dir.vpk')
+        self.temp_path = "./tempout"
 
     def test_vpk_creation(self):
-        temp = "./tempout"
+        temp = self.temp_path
 
         for path in self.pak:
             mktree(os.path.join(temp, *os.path.split(path)[:-1]))
@@ -64,8 +65,9 @@ class testcase_newvpk(unittest.TestCase):
             with newpak[path] as f:
                 self.assertTrue(f.verify())
 
-        if os.path.exists(temp):
-            shutil.rmtree(temp)
+    def tearDown(self):
+        if os.path.exists(self.temp_path):
+            shutil.rmtree(self.temp_path)
 
 
 

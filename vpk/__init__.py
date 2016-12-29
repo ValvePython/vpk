@@ -3,6 +3,7 @@ from binascii import crc32
 from io import FileIO
 from io import open as fopen
 import os
+import sys
 
 __version__ = "0.12"
 __author__ = "Rossen Georgiev"
@@ -22,7 +23,7 @@ def new(dir_path):
     return NewVPK(dir_path)
 
 
-class NewVPK:
+class NewVPK(object):
     def __init__(self, path):
         self.signature = 0x55aa1234
         self.version = 1
@@ -143,7 +144,7 @@ class NewVPK:
                         # archive_index
                         # archive_offset
                         # file_length
-                        # term
+                        # suffix
                         f.write(struct.pack("IHHIIH", checksum & 0xFFffFFff,
                                                       0,
                                                       0x7fff,
@@ -169,19 +170,32 @@ class NewVPK:
         return VPK(path)
 
 
-class VPK:
+def _read_cstring(f):
+    buf = b''
+
+    for chunk in iter(lambda: f.read(64), b''):
+        pos = chunk.find(b'\x00')
+        if pos > -1:
+            buf += chunk[:pos]
+            f.seek(f.tell() - (len(chunk) - (pos + 1)))
+            break
+
+        buf += chunk
+
+    return buf.decode('ascii')
+
+class VPK(object):
     """
     Wrapper for reading Valve's VPK files
     """
+    signature = 0
+    version = 0
+    tree_length = 0
+    header_length = 0
 
-    def __init__(self, vpk_path, read_header_only=False):
+    def __init__(self, vpk_path, read_header_only=True):
         # header
-        self.signature = 0
-        self.version = 0
-        self.tree_length = 0
-        self.header_length = 0
-
-        self.tree = {}
+        self.tree = None
         self.vpk_path = vpk_path
 
         self.read_header()
@@ -194,37 +208,38 @@ class VPK:
         return "%s('%s'%s)" % (self.__class__.__name__, self.vpk_path, headonly)
 
     def __iter__(self):
-        return self.tree.__iter__()
+        if self.tree is None:
+            def path_generator():
+                for path, meta in self.read_index_iter():
+                    yield path
+
+            return iter(path_generator())
+        else:
+            return iter(self.tree)
 
     def items(self):
-        def items_generator(tree):
-            for path in tree:
-                yield path, self.get_file_meta(path)
+        if self.tree is None:
+            tree = self.read_index_iter()
 
-        return items_generator(self.tree)
+            return tree if sys.version_info >= (3,) else list(tree)
+        else:
+            return self.tree.items()
 
     def __len__(self):
-        return len(self.tree)
+        if self.tree is None:
+            length = 0
+            for _ in self.read_index_iter():
+                length += 1
+
+            return length
+        else:
+            return len(self.tree)
 
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, traceback):
         pass
-
-    def _read_sz(self, f):
-        buf = b''
-
-        for chunk in iter(lambda: f.read(64), b''):
-            pos = chunk.find(b'\x00')
-            if pos > -1:
-                buf += chunk[:pos]
-                f.seek(f.tell() - (len(chunk) - (pos + 1)))
-                break
-
-            buf += chunk
-
-        return buf.decode('ascii')
 
     def __getitem__(self, key):
         """
@@ -237,22 +252,33 @@ class VPK:
         Returns VPKFile instance for the given path
         """
         metadata = self.get_file_meta(path)
-        return VPKFile(self.vpk_path, filepath=path, **metadata)
+        return self.make_vpkfile(path, metadata)
 
     def get_file_meta(self, path):
         """
         Returns metadata for given file path
         """
+        if self.tree is None:
+            self.read_index()
+
         if path not in self.tree:
             raise KeyError("Path doesn't exist")
 
+        return self._make_meta_dict(self.tree[path])
+
+    def make_vpkfile(self, path, metadata):
+        if isinstance(metadata, tuple):
+            metadata = self._make_meta_dict(metadata)
+        return VPKFile(self.vpk_path, filepath=path, **metadata)
+
+    def _make_meta_dict(self, metadata):
         return dict(zip(['preload',
                          'crc32',
                          'preload_length',
                          'archive_index',
                          'archive_offset',
                          'file_length',
-                         ], self.tree[path]))
+                         ], metadata))
 
     def read_header(self):
         """
@@ -299,8 +325,20 @@ class VPK:
         """
         Reads the index and populates the directory tree
         """
+        if not isinstance(self.tree, dict):
+            self.tree = dict()
 
-        self.tree = {}
+        self.tree.clear()
+
+        for path, metadata in self.read_index_iter():
+            self.tree[path] = metadata
+
+    def read_index_iter(self):
+        """Generator function that reads the file index from the vpk file
+
+        yeilds (file_path, metadata)
+        """
+
         with fopen(self.vpk_path, 'rb') as f:
             f.seek(self.header_length)
 
@@ -308,12 +346,12 @@ class VPK:
                 if self.version > 0 and f.tell() > self.tree_length + self.header_length:
                     raise ValueError("Error parsing index (out of bounds)")
 
-                ext = self._read_sz(f)
+                ext = _read_cstring(f)
                 if ext == '':
                     break
 
                 while True:
-                    path = self._read_sz(f)
+                    path = _read_cstring(f)
                     if path == '':
                         break
                     if path != ' ':
@@ -322,26 +360,27 @@ class VPK:
                         path = ''
 
                     while True:
-                        name = self._read_sz(f)
+                        name = _read_cstring(f)
                         if name == '':
                             break
 
-                        # crc32
-                        # preload_length
-                        # archive_index
-                        # archive_offset
-                        # file_length
-                        metadata = list(struct.unpack("IHHII", f.read(16)))
+                        (crc32,
+                         preload_length,
+                         archive_index,
+                         archive_offset,
+                         file_length,
+                         suffix,
+                         ) = metadata = list(struct.unpack("IHHIIH", f.read(18)))
 
-                        if struct.unpack("H", f.read(2))[0] != 0xffff:
+                        if suffix != 0xffff:
                             raise ValueError("Error while parsing index")
 
-                        if metadata[2] == 0x7fff:
-                            metadata[3] += self.header_length + self.tree_length
+                        if archive_index == 0x7fff:
+                            metadata[3] = self.header_length + self.tree_length + archive_offset
 
-                        metadata.insert(0, f.read(metadata[1]))
+                        metadata = (f.read(preload_length),) + tuple(metadata[:-1])
 
-                        self.tree["{0}{1}.{2}".format(path, name, ext)] = tuple(metadata)
+                        yield "{0}{1}.{2}".format(path, name, ext), metadata
 
 
 class VPKFile(FileIO):
