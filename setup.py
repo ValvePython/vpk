@@ -12,14 +12,14 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
     name='vpk',
     version=vpk.__version__,
-    description='Library for reading/extracting files from VPK',
+    description='Library for working with Valve Pak files',
     long_description=long_description,
     url='https://github.com/ValvePython/vpk',
     author='Rossen Georgiev',
     author_email='hello@rgp.io',
     license='MIT',
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Topic :: Software Development :: Libraries :: Python Modules',
@@ -32,8 +32,10 @@ setup(
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
-    keywords='valve vpk tf2 dota2 csgo dota',
+    keywords='valve pak vpk tf2 dota2 csgo dota',
     packages=['vpk'],
     zip_safe=True,
 )
