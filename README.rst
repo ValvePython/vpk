@@ -1,7 +1,7 @@
 |pypi| |license| |master_build|
 
 VPK is Valve's file format for storing game assets.
-Pythonic access to VPK files and their contents.
+Pythonic access to VPK files and their contents together with a cli tool.
 
 Tested and works on ``python2.6``, ``python2.7``, ``python3.2+``, ``pypy`` and ``pypy3``.
 
