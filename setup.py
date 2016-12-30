@@ -38,4 +38,9 @@ setup(
     keywords='valve pak vpk tf2 dota2 csgo dota',
     packages=['vpk'],
     zip_safe=True,
+    entry_points={
+        'console_scripts': [
+            'vpk = vpk.cli:main',
+            ],
+    },
 )
