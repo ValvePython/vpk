@@ -5,7 +5,7 @@ from io import open as fopen
 import os
 import sys
 
-__version__ = "0.12"
+__version__ = "1.0"
 __author__ = "Rossen Georgiev"
 
 

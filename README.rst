@@ -1,7 +1,7 @@
 |pypi| |license| |master_build|
 
 VPK is Valve's file format for storing game assets.
-This module is able to read the index and individual files.
+Pythonic access to VPK files and their contents.
 
 Tested and works on ``python2.6``, ``python2.7``, ``python3.2+``, ``pypy`` and ``pypy3``.
 
@@ -16,8 +16,8 @@ You can grab the latest release from https://pypi.python.org/pypi/vpk or via ``p
     pip install vpk
 
 
-Example usage
--------------
+Quick start
+-----------
 
 The VPK instance is iterable in the standard ways and produces paths to files
 
@@ -29,19 +29,6 @@ The VPK instance is iterable in the standard ways and produces paths to files
 
     for filepath in pak1:
         print filepath
-
-.. code:: text
-
-    -------------------------------------------------
-    sound/half_sec_qd.wav
-    sound/items/guardian_greaves.wav
-    sound/items/urn_of_shadows.wav
-    sound/items/rune_bounty.wav
-    sound/items/refresher.wav
-    sound/items/item_mael_lightning_04.wav
-    sound/items/greevil_whistle.wav
-    ...
-
 
 Reading a specifc file is done by passing the file path to ``get_file()`` method, which
 returns a ``VPKFile`` instance, which acts as a regular ``file`` instance. Writting is not
@@ -66,15 +53,15 @@ possible.
             "ms_per_frame" "100"
     ...
 
-Or if you need to extract a file.
+Saving a file is just as easy.
 
 .. code:: python
 
     pakfile.save("./emoticons.txt")
 
 
-The module supports creating a basic VPK.
-Multi archive packs are not supported yet.
+The module supports creating basic VPKs.
+Multi archive paks are not yet supported.
 
 .. code:: python
 
@@ -82,6 +69,42 @@ Multi archive packs are not supported yet.
     newpak.save("file.vpk")
 
     pak = newpak.save_and_open("file.vpk")
+
+
+CLI tool
+--------
+
+A command line utility is also included
+
+.. code:: text
+
+    usage: vpk [-h] [--version] [-l] [-la] [-x OUT_LOCATION] [-nd] [-t] [-c DIR]
+               [-f WILDCARD | -re REGEX | -name WILDCARD]
+               file
+
+    Manage Valve Pak files
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      --version             show program's version number and exit
+
+    Main:
+      file                  Input VPK file
+      -l, --list            List file paths
+      -la                   List file paths, crc, size
+      -x OUT_LOCATION, --extract OUT_LOCATION
+                            Exctract files to directory
+      -nd, --no-directories
+                            Don't create directries during extraction
+      -t, --test            Verify contents
+      -c DIR, --create DIR  Create VPK file from directory
+
+    Filters:
+      -f WILDCARD, --filter WILDCARD
+                            Wildcard filter for file paths
+      -re REGEX, --regex REGEX
+                            Regular expression filter for file paths
+      -name WILDCARD        Filename wildcard filter
 
 
 .. |pypi| image:: https://img.shields.io/pypi/v/vpk.svg?style=flat&label=latest%20version
