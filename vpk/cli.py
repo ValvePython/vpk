@@ -151,6 +151,10 @@ def main():
         parser.print_help()
         return
 
+    if args.file == '-':
+        print("Reading from/writing to a pipe is not supported")
+        return
+
     try:
         if args.create:
             create_vpk(args.create, args.file)
