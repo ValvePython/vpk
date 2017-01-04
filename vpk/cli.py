@@ -169,6 +169,8 @@ def main():
         else:
             print_header(pak)
 
+    except ValueError as e:
+        print("Error:", str(e))
     except IOError as e:
         print("IOError:", str(e))
     except KeyboardInterrupt:
