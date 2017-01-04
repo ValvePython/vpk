@@ -1,5 +1,6 @@
 import struct
 from binascii import crc32
+from hashlib import md5
 from io import FileIO
 from io import open as fopen
 import os
@@ -292,9 +293,7 @@ class VPK(object):
 
             # original format - headerless
             if self.signature != 0x55aa1234:
-                self.signature = 0
-                self.version = 0
-                self.tree_length = 0
+                raise ValueError("File is not VPK (invalid magic)")
             # v1
             elif self.version == 1:
                 self.header_length += 4*3
@@ -318,8 +317,48 @@ class VPK(object):
                  self.signature_length
                  ) = struct.unpack("4I", f.read(4*4))
                 self.header_length += 4*7
+
+                f.seek(self.tree_length + self.embed_chunk_length + self.chunk_hashes_length, 1)
+
+                assert self.self_hashes_length == 48, "Self hashes section size mismatch"
+
+                (self.tree_checksum,
+                 self.chunk_hashes_checksum,
+                 self.file_checksum,
+                 ) = struct.unpack("16s16s16s", f.read(16*3))
             else:
                 raise ValueError("Invalid header, or unsupported version")
+
+    def calculate_checksums(self):
+        assert self.version == 2, "Checksum only work for VPK version 2"
+
+        tree_checksum = md5()
+        chunk_hashes_checksum = md5()
+        file_checksum = md5()
+
+        def chunk_reader(length, chunk_size=2**14):
+            limit = f.tell() + length
+
+            while f.tell() < limit:
+                yield f.read(min(chunk_size, limit - f.tell()))
+
+        with fopen(self.vpk_path, 'rb') as f:
+            file_checksum.update(f.read(self.header_length))
+
+            for chunk in chunk_reader(self.tree_length):
+                file_checksum.update(chunk)
+                tree_checksum.update(chunk)
+
+            for chunk in chunk_reader(self.embed_chunk_length):
+                file_checksum.update(chunk)
+
+            for chunk in chunk_reader(self.chunk_hashes_length):
+                file_checksum.update(chunk)
+                chunk_hashes_checksum.update(chunk)
+
+            file_checksum.update(f.read(16*2))
+
+        return tree_checksum.digest(), chunk_hashes_checksum.digest(), file_checksum.digest()
 
     def read_index(self):
         """

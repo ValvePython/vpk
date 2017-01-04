@@ -8,6 +8,7 @@ import re
 import sys
 from fnmatch import fnmatch
 import argparse
+from binascii import hexlify
 import os
 
 import vpk
@@ -40,15 +41,28 @@ def make_argparser():
 def print_header(pak):
     num_files = len(pak)
 
-    print("VPK File:", pak.vpk_path)
-    print("Version:", pak.version)
-    print("Size: {:,}".format(os.path.getsize(pak.vpk_path)))
+    print("% 20s"%"VPK File:", pak.vpk_path)
+    print("% 20s"%"Version:", pak.version)
+    print("% 20s"%"Size:", "{:,}".format(os.path.getsize(pak.vpk_path)))
 
     if pak.version > 0:
-        print("Header size: {:,}".format(pak.header_length))
-        print("Index size: {:,}".format(pak.tree_length))
+        print("% 20s"%"Header size:", "{:,}".format(pak.header_length))
+        print("% 20s"%"Index size:", "{:,}".format(pak.tree_length))
 
-    print("Number of files: {:,}".format(num_files))
+    if pak.version == 2:
+        treesum, chunksum, filesum = pak.calculate_checksums()
+
+        treesum_hex = hexlify(pak.tree_checksum).decode('ascii')
+        chunksum_hex = hexlify(pak.chunk_hashes_checksum).decode('ascii')
+        filesum_hex = hexlify(pak.file_checksum).decode('ascii')
+
+        print("% 20s"%"Embedded chunk size:", "{:,}".format(pak.embed_chunk_length))
+        print("% 20s"%"Tree MD5:", treesum_hex, "(OK)" if pak.tree_checksum == treesum else "MISMATCH!")
+        print("% 20s"%"Chunk hashes MD5:", chunksum_hex, "(OK)" if pak.chunk_hashes_checksum == chunksum else "MISMATCH!")
+        print("% 20s"%"File MD5:", filesum_hex, "(OK)" if pak.file_checksum == filesum else "MISMATCH!")
+        print("% 20s"%"Has signature:", "Yes" if pak.signature_length else "No")
+
+    print("% 20s"%"Number of files:", "{:,}".format(num_files))
 
 
 def make_filter_func(wildcard=None, name_wildcard=None, regex=None):
