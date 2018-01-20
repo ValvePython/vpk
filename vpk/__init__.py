@@ -6,7 +6,7 @@ from io import open as fopen
 import os
 import sys
 
-__version__ = "1.1"
+__version__ = "1.2"
 __author__ = "Rossen Georgiev"
 
 
@@ -253,7 +253,7 @@ class VPK(object):
         Returns VPKFile instance for the given path
         """
         metadata = self.get_file_meta(path)
-        return self.make_vpkfile(path, metadata)
+        return self.get_vpkfile_instance(path, metadata)
 
     def get_file_meta(self, path):
         """
@@ -267,7 +267,7 @@ class VPK(object):
 
         return self._make_meta_dict(self.tree[path])
 
-    def make_vpkfile(self, path, metadata):
+    def get_vpkfile_instance(self, path, metadata):
         if isinstance(metadata, tuple):
             metadata = self._make_meta_dict(metadata)
         return VPKFile(self.vpk_path, filepath=path, **metadata)

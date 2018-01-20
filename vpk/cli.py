@@ -28,6 +28,7 @@ def make_argparser():
     info.add_argument('-nd', '--no-directories', dest='makedir', action='store_false', help="Don't create directries during extraction")
     excl.add_argument('-t', '--test', action='store_true', help='Verify contents')
     excl.add_argument('-c', '--create', metavar='DIR', type=str, help='Create VPK file from directory')
+    excl.add_argument('-p', '--pipe', dest='pipe_output', action='store_true', help='Write file contents to stdout')
 
     filtr = parser.add_argument_group('Filters')
     fexcl = filtr.add_mutually_exclusive_group()
@@ -97,7 +98,7 @@ def print_file_list(pak, match_filter=None, include_details=False):
 
 def print_verifcation(pak):
     for path, metadata in pak.read_index_iter():
-        with pak.make_vpkfile(path, metadata) as vpkfile:
+        with pak.get_vpkfile_instance(path, metadata) as vpkfile:
             ok = vpkfile.verify()
 
             if not ok:
@@ -121,7 +122,7 @@ def extract_files(pak, match_filter, outdir, makedir=False):
         if match_filter and not match_filter(path):
             continue
 
-        with pak.make_vpkfile(path, metadata) as vpkfile:
+        with pak.get_vpkfile_instance(path, metadata) as vpkfile:
             if makedir:
                 outpath = os.path.join(outdir, path)
             else:
@@ -132,6 +133,22 @@ def extract_files(pak, match_filter, outdir, makedir=False):
             vpkfile.save(outpath)
 
             print(outpath)
+
+
+def pipe_files(pak, match_filter):
+    for filepath in pak:
+        if match_filter and not match_filter(filepath):
+            continue
+
+        vfp = pak.get_file(filepath)
+
+        while True:
+            chunk = vfp.read(8192)
+
+            if not chunk:
+                break
+
+            sys.stdout.write(chunk)
 
 
 def create_vpk(directory, outpath):
@@ -166,6 +183,8 @@ def main():
 
         if args.list or args.listall:
             print_file_list(pak, path_filter, args.listall)
+        elif args.pipe_output:
+            pipe_files(pak, path_filter)
         elif args.test:
             print_verifcation(pak)
         elif args.out_location:
