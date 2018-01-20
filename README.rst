@@ -79,7 +79,7 @@ A command line utility is also included
 .. code:: text
 
     usage: vpk [-h] [--version] [-l] [-la] [-x OUT_LOCATION] [-nd] [-t] [-c DIR]
-               [-f WILDCARD | -re REGEX | -name WILDCARD]
+               [-p] [-f WILDCARD | -re REGEX | -name WILDCARD]
                file
 
     Manage Valve Pak files
@@ -98,6 +98,7 @@ A command line utility is also included
                             Don't create directries during extraction
       -t, --test            Verify contents
       -c DIR, --create DIR  Create VPK file from directory
+      -p, --pipe            Write file contents to stdout
 
     Filters:
       -f WILDCARD, --filter WILDCARD
@@ -105,6 +106,12 @@ A command line utility is also included
       -re REGEX, --regex REGEX
                             Regular expression filter for file paths
       -name WILDCARD        Filename wildcard filter
+
+
+Looking to decompile Valve custom asset formats?
+------------------------------------------------
+
+Check out https://github.com/SteamDatabase/ValveResourceFormat/
 
 
 .. |pypi| image:: https://img.shields.io/pypi/v/vpk.svg?style=flat&label=latest%20version
