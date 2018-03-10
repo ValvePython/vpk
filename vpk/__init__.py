@@ -6,7 +6,7 @@ from io import open as fopen
 import os
 import sys
 
-__version__ = "1.2"
+__version__ = "1.2.1"
 __author__ = "Rossen Georgiev"
 
 
@@ -183,7 +183,7 @@ def _read_cstring(f):
 
         buf += chunk
 
-    return buf.decode('ascii')
+    return buf.decode('latin1')
 
 class VPK(object):
     """
@@ -419,7 +419,7 @@ class VPK(object):
 
                         metadata = (f.read(preload_length),) + tuple(metadata[:-1])
 
-                        yield "{0}{1}.{2}".format(path, name, ext), metadata
+                        yield path + name + '.' + ext, metadata
 
 
 class VPKFile(FileIO):
