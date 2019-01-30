@@ -49,7 +49,7 @@ class NewVPK(object):
         self.path = path
 
         for root, _, filelist in os.walk(path):
-            rel = root[len(path):].lstrip('/')
+            rel = root[len(path):].lstrip('/\\')
 
             # empty rel, means file is in root dir
             if not rel:
@@ -394,7 +394,7 @@ class VPK(object):
                     if path == '':
                         break
                     if path != ' ':
-                        path += '/'
+                        path = os.path.join(path, '')
                     else:
                         path = ''
 
