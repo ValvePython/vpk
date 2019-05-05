@@ -16,11 +16,11 @@ help:
 	@echo "$$HELPBODY"
 
 init:
-	pip install nose
+	pip install pytest==3.2.1 pytest-cov==2.5.1
 
 test:
 	rm -f .coverage vpk/*.pyc tests/*.pyc
-	PYTHONHASHSEED=0 nosetests --verbosity 2 --with-coverage --cover-package=vpk
+	PYTHONHASHSEED=0 pytest --cov=vpk tests
 
 pylint:
 	pylint -r n -f colorized vpk || true
