@@ -22,6 +22,7 @@ class testcase_vpk(unittest.TestCase):
                 self.assertTrue(f.verify())
 
     def test_file_count_as_list(self):
+        print(repr(list(self.pak)))
         self.assertTrue(len(self.pak) == len(list(self.pak)))
 
     def test_file_count_as_dict(self):
@@ -43,6 +44,43 @@ class testcase_vpk(unittest.TestCase):
         with self.pak["a/b/c/d/testfile3.bin"] as f:
             self.assertEqual(b"OK", f.readline())
 
+    def test_filepath_type(self):
+        self.assertIsInstance(list(self.pak)[0], str)
+
+class testcase_vpk_bytes(unittest.TestCase):
+    def setUp(self):
+        self.pak = vpk.open('./tests/test_dir.vpk', path_enc=None)
+
+    def test_verify_file_crc32(self):
+        for path in self.pak:
+            with self.pak[path] as f:
+                self.assertTrue(f.verify())
+
+    def test_file_count_as_list(self):
+        print(repr(list(self.pak)))
+        self.assertTrue(len(self.pak) == len(list(self.pak)))
+
+    def test_file_count_as_dict(self):
+        self.assertTrue(len(self.pak) == len(dict(self.pak.items())))
+
+    def test_testfile1_txt(self):
+        with self.pak[b"testfile1.txt"] as f:
+            for i, line in enumerate(f.readlines(), start=1):
+                self.assertEqual("line {0}".format(i).encode(), line.rstrip())
+
+    def test_testfile2_txt(self):
+        with self.pak[b"testdir/testfile2.txt"] as f:
+            i = 1
+            for line in f:
+                self.assertEqual("line {0}".format(i).encode(), line.rstrip())
+                i += 1
+
+    def test_testfile3_bin(self):
+        with self.pak[b"a/b/c/d/testfile3.bin"] as f:
+            self.assertEqual(b"OK", f.readline())
+
+    def test_filepath_type(self):
+        self.assertIsInstance(list(self.pak)[0], bytes)
 
 class testcase_newvpk(unittest.TestCase):
     def setUp(self):

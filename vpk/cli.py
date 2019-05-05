@@ -24,11 +24,13 @@ def make_argparser():
     excl = info.add_mutually_exclusive_group()
     excl.add_argument('-l', '--list', dest='list', action='store_true', help='List file paths')
     excl.add_argument('-la', dest='listall', action='store_true', help='List file paths, crc, size')
-    excl.add_argument('-x', '--extract', dest='out_location', type=str, help='Exctract files to directory')
-    info.add_argument('-nd', '--no-directories', dest='makedir', action='store_false', help="Don't create directries during extraction")
     excl.add_argument('-t', '--test', action='store_true', help='Verify contents')
     excl.add_argument('-c', '--create', metavar='DIR', type=str, help='Create VPK file from directory')
     excl.add_argument('-p', '--pipe', dest='pipe_output', action='store_true', help='Write file contents to stdout')
+    excl.add_argument('-x', '--extract', dest='out_location', type=str, help='Exctract files to directory')
+
+    info.add_argument('-nd', '--no-directories', dest='makedir', action='store_false', help="Don't create directries during extraction")
+    info.add_argument('-pe', '--path-encoding', dest='path_enc', default='utf-8', metavar='ENC', type=str, help='File paths encoding')
 
     filtr = parser.add_argument_group('Filters')
     fexcl = filtr.add_mutually_exclusive_group()
@@ -151,13 +153,13 @@ def pipe_files(pak, match_filter):
             sys.stdout.write(chunk)
 
 
-def create_vpk(directory, outpath):
-    if not os.path.exists(directory):
-        raise IOError("path doesn't exist: %s" % repr(directory))
-    if not os.path.isdir(directory):
-        raise IOError("not a directory: %s" % repr(directory))
+def create_vpk(args):
+    if not os.path.exists(args.create):
+        raise IOError("path doesn't exist: %s" % repr(args.create))
+    if not os.path.isdir(args.create):
+        raise IOError("not a directory: %s" % repr(args.create))
 
-    vpk.new(directory).save(outpath)
+    vpk.new(args.create, path_enc=args.path_enc).save(args.file)
 
 
 def main():
@@ -177,7 +179,7 @@ def main():
             create_vpk(args.create, args.file)
             return
 
-        pak = vpk.open(args.file)
+        pak = vpk.open(args.file, path_enc=args.path_enc)
 
         path_filter = make_filter_func(args.filter, args.filter_name, args.regex)
 

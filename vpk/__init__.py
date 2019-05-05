@@ -10,22 +10,24 @@ __version__ = "1.2.1"
 __author__ = "Rossen Georgiev"
 
 
-def open(vpk_path, **kwargs):
+def open(*args, **kwargs):
     """
     Returns a VPK instance for specified path. Same argumets as VPK class.
     """
-    return VPK(vpk_path, **kwargs)
+    return VPK(*args, **kwargs)
 
 
-def new(dir_path):
+def new(*args, **kwargs):
     """
     Returns a NewVPK instance for the specific path.
     """
-    return NewVPK(dir_path)
+    return NewVPK(*args, **kwargs)
 
 
 class NewVPK(object):
-    def __init__(self, path):
+    def __init__(self, path, path_enc='utf-8'):
+        self.path_enc = path_enc
+
         self.signature = 0x55aa1234
         self.version = 1
         self.tree_length = 0
@@ -110,18 +112,18 @@ class NewVPK(object):
 
             # write file tree
             for ext in self.tree:
-                f.write("{0}\x00".format(ext).encode('latin-1'))
+                f.write(ext.encode(self.path_enc) + b"\x00")
 
                 for relpath in self.tree[ext]:
-                    f.write("{0}\x00".format(relpath).encode('latin-1'))
+                    f.write(relpath.encode(self.path_enc) + b"\x00")
 
                     for filename in self.tree[ext][relpath]:
-                        f.write("{0}\x00".format(filename).encode('latin-1'))
+                        f.write(filename.encode(self.path_enc) + b'\x00')
 
                         # append file data
                         metadata_offset = f.tell()
                         file_offset = data_offset
-                        real_filename = filename if not ext else "{0}.{1}".format(filename, ext)
+                        real_filename = filename if not ext else (filename + '.' + ext)
                         checksum = 0
                         f.seek(data_offset)
 
@@ -130,7 +132,7 @@ class NewVPK(object):
                                                 real_filename
                                                 ),
                                    'rb') as pakfile:
-                            for chunk in iter(lambda: pakfile.read(1024), b''):
+                            for chunk in iter(lambda: pakfile.read(8192), b''):
                                 checksum = crc32(chunk, checksum)
                                 f.write(chunk)
 
@@ -171,7 +173,7 @@ class NewVPK(object):
         return VPK(path)
 
 
-def _read_cstring(f):
+def _read_cstring(f, encoding='utf-8'):
     buf = b''
 
     for chunk in iter(lambda: f.read(64), b''):
@@ -183,18 +185,20 @@ def _read_cstring(f):
 
         buf += chunk
 
-    return buf.decode('latin1')
+    return buf.decode(encoding) if encoding else buf
 
 class VPK(object):
     """
-    Wrapper for reading Valve's VPK files
+    Wrapper for reading Valve's Pak files
     """
     signature = 0
     version = 0
     tree_length = 0
     header_length = 0
 
-    def __init__(self, vpk_path, read_header_only=True):
+    def __init__(self, vpk_path, read_header_only=True, path_enc='utf-8'):
+        self.path_enc = path_enc
+
         # header
         self.tree = None
         self.vpk_path = vpk_path
@@ -377,6 +381,7 @@ class VPK(object):
 
         yeilds (file_path, metadata)
         """
+        _sblank, _sempty, _sdot = (' ', '', '.') if self.path_enc else (b' ', b'', b'.')
 
         with fopen(self.vpk_path, 'rb') as f:
             f.seek(self.header_length)
@@ -385,22 +390,22 @@ class VPK(object):
                 if self.version > 0 and f.tell() > self.tree_length + self.header_length:
                     raise ValueError("Error parsing index (out of bounds)")
 
-                ext = _read_cstring(f)
-                if ext == '':
+                ext = _read_cstring(f, self.path_enc)
+                if not ext:
                     break
 
                 while True:
-                    path = _read_cstring(f)
-                    if path == '':
+                    path = _read_cstring(f, self.path_enc)
+                    if not path:
                         break
-                    if path != ' ':
-                        path = os.path.join(path, '')
+                    if path != _sblank:
+                        path = os.path.join(path, _sempty)
                     else:
-                        path = ''
+                        path = _sempty
 
                     while True:
-                        name = _read_cstring(f)
-                        if name == '':
+                        name = _read_cstring(f, self.path_enc)
+                        if not name:
                             break
 
                         (crc32,
@@ -419,7 +424,7 @@ class VPK(object):
 
                         metadata = (f.read(preload_length),) + tuple(metadata[:-1])
 
-                        yield path + name + '.' + ext, metadata
+                        yield path + name + _sdot + ext, metadata
 
 
 class VPKFile(FileIO):
@@ -448,7 +453,7 @@ class VPKFile(FileIO):
             self.vpk_path = None
             return
 
-        super(VPKFile, self).__init__(vpk_path.replace("dir.", "%03d." % self.archive_index), 'rb')
+        super(VPKFile, self).__init__(vpk_path.replace('english','').replace("dir.", "%03d." % self.archive_index), 'rb')
         super(VPKFile, self).seek(self.archive_offset)
 
     def save(self, path):
@@ -461,7 +466,7 @@ class VPKFile(FileIO):
 
         with fopen(path, 'wb') as output:
             output.truncate(self.length)
-            for chunk in iter(lambda: self.read(1024), b''):
+            for chunk in iter(lambda: self.read(8192), b''):
                 output.write(chunk)
 
         self.seek(pos)
@@ -478,7 +483,7 @@ class VPKFile(FileIO):
         self.seek(0)
 
         checksum = 0
-        for chunk in iter(lambda: self.read(1024), b''):
+        for chunk in iter(lambda: self.read(8192), b''):
             checksum = crc32(chunk, checksum)
 
         # restore file pointer
