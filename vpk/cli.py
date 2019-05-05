@@ -144,13 +144,13 @@ def pipe_files(pak, match_filter):
 
         vfp = pak.get_file(filepath)
 
-        while True:
-            chunk = vfp.read(8192)
+        try:
+            _out = sys.stdout.buffer
+        except AttributeError:
+            _out = sys.stdout
 
-            if not chunk:
-                break
-
-            sys.stdout.write(chunk)
+        for chunk in iter(lambda: vfp.read(8192), b''):
+            _out.write(chunk)
 
 
 def create_vpk(args):
