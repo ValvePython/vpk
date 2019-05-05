@@ -11,6 +11,11 @@ def mktree(path):
         if exc.errno == errno.EEXIST and os.path.isdir(path):
             pass
 
+try:
+    _u = unicode
+except:
+    _u = str
+
 
 class testcase_vpk(unittest.TestCase):
     def setUp(self):
@@ -45,7 +50,7 @@ class testcase_vpk(unittest.TestCase):
             self.assertEqual(b"OK", f.readline())
 
     def test_filepath_type(self):
-        self.assertIsInstance(list(self.pak)[0], str)
+        self.assertIsInstance(list(self.pak)[0], _u)
 
 class testcase_vpk_bytes(unittest.TestCase):
     def setUp(self):
