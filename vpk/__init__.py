@@ -1,7 +1,6 @@
 import struct
 from binascii import crc32
 from hashlib import md5
-from io import FileIO
 from io import open as fopen
 import os
 import sys
@@ -12,14 +11,14 @@ __author__ = "Rossen Georgiev"
 
 def open(*args, **kwargs):
     """
-    Returns a VPK instance for specified path. Same argumets as VPK class.
+    Returns a VPK instance for specified path. Same arguments
     """
     return VPK(*args, **kwargs)
 
 
 def new(*args, **kwargs):
     """
-    Returns a NewVPK instance for the specific path.
+    Returns a NewVPK instance for the specific path. Same arguments
     """
     return NewVPK(*args, **kwargs)
 
@@ -196,8 +195,9 @@ class VPK(object):
     tree_length = 0
     header_length = 0
 
-    def __init__(self, vpk_path, read_header_only=True, path_enc='utf-8'):
+    def __init__(self, vpk_path, read_header_only=True, path_enc='utf-8', fopen=fopen):
         self.path_enc = path_enc
+        self.fopen = fopen
 
         # header
         self.tree = None
@@ -274,7 +274,15 @@ class VPK(object):
     def get_vpkfile_instance(self, path, metadata):
         if isinstance(metadata, tuple):
             metadata = self._make_meta_dict(metadata)
-        return VPKFile(self.vpk_path, filepath=path, **metadata)
+        return VPKFile(self._make_vpkfile_path(metadata), filepath=path, fopen=self.fopen, **metadata)
+
+    def _make_vpkfile_path(self, metadata):
+        path = self.vpk_path
+
+        if metadata.get('file_length', 0) > 0:
+            path = path.replace('english','').replace("dir.", "%03d." % metadata['archive_index'])
+
+        return path
 
     def _make_meta_dict(self, metadata):
         return dict(zip(['preload',
@@ -289,7 +297,7 @@ class VPK(object):
         """
         Reads VPK file header from the file
         """
-        with fopen(self.vpk_path, 'rb') as f:
+        with self.fopen(self.vpk_path, 'rb') as f:
             (self.signature,
              self.version,
              self.tree_length
@@ -346,7 +354,7 @@ class VPK(object):
             while f.tell() < limit:
                 yield f.read(min(chunk_size, limit - f.tell()))
 
-        with fopen(self.vpk_path, 'rb') as f:
+        with self.fopen(self.vpk_path, 'rb') as f:
             file_checksum.update(f.read(self.header_length))
 
             for chunk in chunk_reader(self.tree_length):
@@ -383,7 +391,7 @@ class VPK(object):
         """
         _sblank, _sempty, _sdot = (' ', '', '.') if self.path_enc else (b' ', b'', b'.')
 
-        with fopen(self.vpk_path, 'rb') as f:
+        with self.fopen(self.vpk_path, 'rb') as f:
             f.seek(self.header_length)
 
             while True:
@@ -427,15 +435,16 @@ class VPK(object):
                         yield path + name + _sdot + ext, metadata
 
 
-class VPKFile(FileIO):
+class VPKFile(object):
     """
-    Wrapper class for files with VPK
-
-    Should act like a regular file object. No garantees
+    File-like object for files inside VPK
     """
+    _fp = None
+    _vpk_path = None
 
-    def __init__(self, vpk_path, **kw):
+    def __init__(self, vpk_path, fopen=fopen, **kw):
         self.vpk_path = vpk_path
+        self.fopen = fopen
         self.vpk_meta = kw
 
         for k, v in kw.items():
@@ -449,12 +458,9 @@ class VPKFile(FileIO):
         # offset of entire file
         self.offset = 0
 
-        if self.file_length == 0:
-            self.vpk_path = None
-            return
-
-        super(VPKFile, self).__init__(vpk_path.replace('english','').replace("dir.", "%03d." % self.archive_index), 'rb')
-        super(VPKFile, self).seek(self.archive_offset)
+        if vpk_path:
+            self._fp = self.fopen(vpk_path, 'rb')
+            self._fp.seek(self.archive_offset)
 
     def save(self, path):
         """
@@ -494,7 +500,7 @@ class VPKFile(FileIO):
     def __repr__(self):
         return "%s(%s, %s)" % (
             self.__class__.__name__,
-            repr(self.name) if self.file_length > 0 else None,
+            repr(self.vpk_path) if self.file_length > 0 else None,
             ', '.join(["%s=%s" % (k, repr(v)) for k, v in self.vpk_meta.items()])
             )
 
@@ -517,18 +523,25 @@ class VPKFile(FileIO):
         return line
 
     def close(self):
-        super(VPKFile, self).close()
+        if self._fp:
+            self._fp.close()
 
     def tell(self):
         return self.offset
 
-    def seek(self, offset):
-        if offset < 0:
-            raise IOError("Invalid argument")
+    def seek(self, offset, whence=0):
+        if whence == 0:
+            if offset < 0:
+                raise IOError("Invalid argument")
+        elif whence == 1:
+            offset = self.offset + offset
+        elif whence == 2:
+            offset = self.length + offset
+        else:
+            raise ValueError("Invalid value for whence")
 
-        self.offset = offset
-        if self.file_length > 0:
-            super(VPKFile, self).seek(self.archive_offset + max(offset - self.preload_length, 0))
+        self.offset = offset = min(max(offset, 0), self.length)
+        self._fp.seek(self.archive_offset + max(offset - self.preload_length, 0))
 
     def readlines(self):
         return [line for line in self]
@@ -541,7 +554,7 @@ class VPKFile(FileIO):
             if pos > -1:
                 pos += 1  # include \n
                 buf += chunk[:pos]
-                self.seek(self.offset - (len(chunk) - pos))
+                self.seek(-(len(chunk) - pos), 1)
                 break
 
             buf += chunk
@@ -562,7 +575,7 @@ class VPKFile(FileIO):
 
         if self.file_length > 0 and self.offset >= self.preload_length:
             left = self.file_length - (self.offset - self.preload_length)
-            data += super(VPKFile, self).read(left if length == -1 else min(left, length))
+            data += self._fp.read(left if length == -1 else min(left, length))
             self.offset += left if length == -1 else min(left, length)
 
         return data
