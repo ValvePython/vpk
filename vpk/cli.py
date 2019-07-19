@@ -176,7 +176,7 @@ def main():
 
     try:
         if args.create:
-            create_vpk(args.create, args.file)
+            create_vpk(args)
             return
 
         pak = vpk.open(args.file, path_enc=args.path_enc)
