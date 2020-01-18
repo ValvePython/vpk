@@ -114,7 +114,8 @@ class NewVPK(object):
                 f.write(ext.encode(self.path_enc) + b"\x00")
 
                 for relpath in self.tree[ext]:
-                    f.write(relpath.encode(self.path_enc) + b"\x00")
+                    norm_relpath = '/'.join(relpath.split(os.path.sep))
+                    f.write(norm_relpath.encode(self.path_enc) + b"\x00")
 
                     for filename in self.tree[ext][relpath]:
                         f.write(filename.encode(self.path_enc) + b'\x00')
@@ -389,7 +390,9 @@ class VPK(object):
 
         yeilds (file_path, metadata)
         """
-        _sblank, _sempty, _sdot = (' ', '', '.') if self.path_enc else (b' ', b'', b'.')
+        _sblank, _sempty, _sdot, _ssep = ((' ', '', '.', '/')
+                                          if self.path_enc else
+                                          (b' ', b'', b'.', b'/'))
 
         with self.fopen(self.vpk_path, 'rb') as f:
             f.seek(self.header_length)
@@ -407,7 +410,7 @@ class VPK(object):
                     if not path:
                         break
                     if path != _sblank:
-                        path = os.path.join(path, _sempty)
+                        path = path + _ssep
                     else:
                         path = _sempty
 
