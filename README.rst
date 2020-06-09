@@ -1,4 +1,5 @@
-|pypi| |license| |master_build|
+| |pypi| |license| |master_build|
+| |sonar_maintainability| |sonar_reliability| |sonar_security|
 
 VPK is Valve's file format for storing game assets.
 Pythonic access to VPK files and their contents together with a cli tool.
@@ -125,3 +126,15 @@ Check out https://github.com/SteamDatabase/ValveResourceFormat/
 .. |master_build| image:: https://img.shields.io/travis/ValvePython/vpk/master.svg?style=flat&label=master%20build
     :target: http://travis-ci.org/ValvePython/vpk
     :alt: Build status of master branch
+
+.. |sonar_maintainability| image:: https://sonarcloud.io/api/project_badges/measure?project=ValvePython_vpk&metric=sqale_rating
+    :target: https://sonarcloud.io/dashboard?id=ValvePython_vpk
+    :alt: SonarCloud Rating
+
+.. |sonar_reliability| image:: https://sonarcloud.io/api/project_badges/measure?project=ValvePython_vpk&metric=reliability_rating
+    :target: https://sonarcloud.io/dashboard?id=ValvePython_vpk
+    :alt: SonarCloud Rating
+
+.. |sonar_security| image:: https://sonarcloud.io/api/project_badges/measure?project=ValvePython_vpk&metric=security_rating
+    :target: https://sonarcloud.io/dashboard?id=ValvePython_vpk
+    :alt: SonarCloud Rating
