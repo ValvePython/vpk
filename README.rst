@@ -80,7 +80,7 @@ A command line utility is also included
 .. code:: text
 
     usage: vpk [-h] [--version] [-l] [-la] [-x OUT_LOCATION] [-nd] [-t] [-c DIR]
-               [-p] [-f WILDCARD | -re REGEX | -name WILDCARD]
+               [-p] [-f WILDCARD | -re REGEX | -name WILDCARD] [-v]
                file
 
     Manage Valve Pak files
@@ -94,7 +94,7 @@ A command line utility is also included
       -l, --list            List file paths
       -la                   List file paths, crc, size
       -x OUT_LOCATION, --extract OUT_LOCATION
-                            Exctract files to directory
+                            Extract files to directory
       -nd, --no-directories
                             Don't create directries during extraction
       -t, --test            Verify contents
@@ -107,6 +107,7 @@ A command line utility is also included
       -re REGEX, --regex REGEX
                             Regular expression filter for file paths
       -name WILDCARD        Filename wildcard filter
+      -v, --invert-match    Use filters for exclusion
 
 
 Looking to decompile Valve custom asset formats?
