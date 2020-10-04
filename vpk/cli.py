@@ -27,7 +27,7 @@ def make_argparser():
     excl.add_argument('-t', '--test', action='store_true', help='Verify contents')
     excl.add_argument('-c', '--create', metavar='DIR', type=str, help='Create VPK file from directory')
     excl.add_argument('-p', '--pipe', dest='pipe_output', action='store_true', help='Write file contents to stdout')
-    excl.add_argument('-x', '--extract', dest='out_location', type=str, help='Exctract files to directory')
+    excl.add_argument('-x', '--extract', dest='out_location', type=str, help='Extract files to directory')
 
     info.add_argument('-nd', '--no-directories', dest='makedir', action='store_false', help="Don't create directries during extraction")
     info.add_argument('-pe', '--path-encoding', dest='path_enc', default='utf-8', metavar='ENC', type=str, help='File paths encoding')
@@ -37,6 +37,7 @@ def make_argparser():
     fexcl.add_argument('-f', '--filter', metavar="WILDCARD", type=str, help='Wildcard filter for file paths')
     fexcl.add_argument('-re', '--regex', type=str, help='Regular expression filter for file paths')
     fexcl.add_argument('-name', dest='filter_name', metavar="WILDCARD", type=str, help='Filename wildcard filter')
+    filtr.add_argument('-v', '--invert-match', action='store_true', help='Use filters for exclusion')
 
     return parser
 
@@ -68,18 +69,18 @@ def print_header(pak):
     print("% 20s"%"Number of files:", "{:,}".format(num_files))
 
 
-def make_filter_func(wildcard=None, name_wildcard=None, regex=None):
+def make_filter_func(wildcard=None, name_wildcard=None, regex=None, invert=False):
     path_filter = None
 
     if wildcard:
         def path_filter(path):
-            return fnmatch(path, wildcard)
+            return bool(fnmatch(path, wildcard)) is not invert
     elif name_wildcard:
         def path_filter(path):
-            return fnmatch(os.path.split(path)[1], name_wildcard)
+            return bool(fnmatch(os.path.split(path)[1], name_wildcard)) is not invert
     elif regex:
         def path_filter(path):
-            return not not re.search(regex, path)
+            return bool(re.search(regex, path)) is not invert
 
     return path_filter
 
@@ -162,6 +163,27 @@ def create_vpk(args):
     vpk.new(args.create, path_enc=args.path_enc).save(args.file)
 
 
+def run(args):
+    if args.create:
+        create_vpk(args)
+        return
+
+    pak = vpk.open(args.file, path_enc=args.path_enc)
+
+    path_filter = make_filter_func(args.filter, args.filter_name, args.regex, args.invert_match)
+
+    if args.list or args.listall:
+        print_file_list(pak, path_filter, args.listall)
+    elif args.pipe_output:
+        pipe_files(pak, path_filter)
+    elif args.test:
+        print_verifcation(pak)
+    elif args.out_location:
+        extract_files(pak, path_filter, args.out_location, args.makedir)
+    else:
+        print_header(pak)
+
+
 def main():
     parser = make_argparser()
     args = parser.parse_args()
@@ -174,26 +196,12 @@ def main():
         print("Reading from/writing to a pipe is not supported")
         return
 
+    if args.invert_match and not args.filter and not args.filter_name and not args.regex:
+        print("--invert-match/-v requires one of --filter, --name or --regex")
+        return
+
     try:
-        if args.create:
-            create_vpk(args)
-            return
-
-        pak = vpk.open(args.file, path_enc=args.path_enc)
-
-        path_filter = make_filter_func(args.filter, args.filter_name, args.regex)
-
-        if args.list or args.listall:
-            print_file_list(pak, path_filter, args.listall)
-        elif args.pipe_output:
-            pipe_files(pak, path_filter)
-        elif args.test:
-            print_verifcation(pak)
-        elif args.out_location:
-            extract_files(pak, path_filter, args.out_location, args.makedir)
-        else:
-            print_header(pak)
-
+        run(args)
     except ValueError as e:
         print("Error:", str(e))
     except IOError as e:
