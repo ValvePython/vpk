@@ -26,7 +26,7 @@ jobs:
         python-version: [2.7, 3.5, 3.6, 3.7, 3.8]
         include:
           - os: ubuntu-latest
-            python-version: pypy
+            python-version: pypy2
           - os: ubuntu-latest
             python-version: pypy3
     steps:
