@@ -124,7 +124,7 @@ Check out https://github.com/SteamDatabase/ValveResourceFormat/
     :target: https://pypi.python.org/pypi/vpk
     :alt: MIT License
 
-.. |master_build| image:: https://github.com/ValvePython/vpk/workflows/Pkg%20Tests/badge.svg?branch=github-actions
+.. |master_build| image:: https://github.com/ValvePython/vpk/workflows/Pkg%20Tests/badge.svg?branch=master
     :target: https://github.com/ValvePython/vpk/actions?query=workflow%3A%22Pkg+Tests%22+branch%3Amaster
     :alt: Build status of master branch
 
