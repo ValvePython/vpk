@@ -4,7 +4,7 @@
 VPK is Valve's file format for storing game assets.
 Pythonic access to VPK files and their contents together with a cli tool.
 
-Works on: `python2.7``, ``python3.4+``, ``pypy``, and ``pypy3``
+Works on: ``python2.7``, ``python3.4+``, ``pypy``, and ``pypy3``
 
 
 Install
@@ -124,8 +124,8 @@ Check out https://github.com/SteamDatabase/ValveResourceFormat/
     :target: https://pypi.python.org/pypi/vpk
     :alt: MIT License
 
-.. |master_build| image:: https://img.shields.io/travis/ValvePython/vpk/master.svg?style=flat&label=master%20build
-    :target: http://travis-ci.org/ValvePython/vpk
+.. |master_build| image:: https://github.com/ValvePython/vpk/workflows/Pkg%20Tests/badge.svg?branch=github-actions
+    :target: https://github.com/ValvePython/vpk/actions?query=workflow%3A%22Pkg+Tests%22+branch%3Amaster
     :alt: Build status of master branch
 
 .. |sonar_maintainability| image:: https://sonarcloud.io/api/project_badges/measure?project=ValvePython_vpk&metric=sqale_rating
