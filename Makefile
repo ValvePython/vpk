@@ -16,11 +16,11 @@ help:
 	@echo "$$HELPBODY"
 
 init:
-	pip install pytest==3.2.1 pytest-cov==2.5.1
+	pip install -r requirements.txt
 
 test:
 	rm -f .coverage vpk/*.pyc tests/*.pyc
-	PYTHONHASHSEED=0 pytest --cov=vpk tests
+	PYTHONHASHSEED=0 pytest --tb=short --cov-config .coveragerc --cov=vpk tests
 
 pylint:
 	pylint -r n -f colorized vpk || true

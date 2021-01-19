@@ -1,4 +1,4 @@
-| |pypi| |license| |master_build|
+| |pypi| |license| |coverage| |master_build|
 | |sonar_maintainability| |sonar_reliability| |sonar_security|
 
 VPK is Valve's file format for storing game assets.
@@ -123,6 +123,10 @@ Check out https://github.com/SteamDatabase/ValveResourceFormat/
 .. |license| image:: https://img.shields.io/pypi/l/vpk.svg?style=flat&label=license
     :target: https://pypi.python.org/pypi/vpk
     :alt: MIT License
+
+.. |coverage| image:: https://img.shields.io/coveralls/ValvePython/vpk/master.svg?style=flat
+    :target: https://coveralls.io/r/ValvePython/vpk?branch=master
+    :alt: Test coverage
 
 .. |master_build| image:: https://github.com/ValvePython/vpk/workflows/Tests/badge.svg?branch=master
     :target: https://github.com/ValvePython/vpk/actions?query=workflow%3A%22Tests%22+branch%3Amaster
