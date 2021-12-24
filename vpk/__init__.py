@@ -28,7 +28,7 @@ class NewVPK(object):
         self.path_enc = path_enc
 
         self.signature = 0x55aa1234
-        self.version = 1
+        self.version = 2
         self.tree_length = 0
         self.header_length = 4*3
 
@@ -49,7 +49,7 @@ class NewVPK(object):
         self.file_count = 0
         self.path = path
 
-        for root, _, filelist in os.walk(path):
+        for root, _, filelist in os.walk(path, topdown=True):
             rel = root[len(path):].lstrip('/\\')
 
             # empty rel, means file is in root dir
@@ -99,15 +99,25 @@ class NewVPK(object):
         """
         Saves the VPK at the given path
         """
-        with fopen(vpk_output_path, 'wb') as f:
+        with fopen(vpk_output_path, 'w+b') as f:
             # write VPK1 header
             f.write(struct.pack("3I", self.signature,
                                       self.version,
-                                      self.tree_length))
+                                      self.tree_length,
+                                      ))
+            # write VPK2 header
+            if self.version == 2:
+                f.write(struct.pack("4I", 0, # embed_chunk_length (corrected later)
+                                          0, # chunk_hashes_length
+                                          48, # self_hashes_length
+                                          0,
+                                          ))
 
             self.header_length = f.tell()
 
             data_offset = self.header_length + self.tree_length
+
+            embed_chunk_length = 0
 
             # write file tree
             for ext in self.tree:
@@ -140,6 +150,7 @@ class NewVPK(object):
                         file_length = f.tell() - file_offset
                         f.seek(metadata_offset)
 
+                        embed_chunk_length += file_length
                         # metadata
 
                         # crc32
@@ -163,6 +174,43 @@ class NewVPK(object):
                 f.write(b"\x00")
             # end of file tree
             f.write(b"\x00")
+
+            if self.version == 2:
+                f.seek(4*3) # jump back to write embed_chunk_length
+                f.write(struct.pack("1I", embed_chunk_length))
+
+                # calculate and write checksums
+                tree_checksum = md5()
+                chunk_hashes_checksum = md5()
+                file_checksum = md5()
+
+                def chunk_reader(length, chunk_size=2**14):
+                    limit = f.tell() + length
+
+                    while f.tell() < limit:
+                        yield f.read(min(chunk_size, limit - f.tell()))
+
+                f.seek(0) # jump to start
+                file_checksum.update(f.read(self.header_length))
+
+                for chunk in chunk_reader(self.tree_length):
+                    file_checksum.update(chunk)
+                    tree_checksum.update(chunk)
+
+                for chunk in chunk_reader(embed_chunk_length):
+                    file_checksum.update(chunk)
+
+                # not supported (chunk_hashes_length == 0)
+                #for chunk in chunk_reader(self.chunk_hashes_length):
+                #    file_checksum.update(chunk)
+                #    chunk_hashes_checksum.update(chunk)
+
+                file_checksum.update(tree_checksum.digest())
+                file_checksum.update(chunk_hashes_checksum.digest())
+
+                f.write(tree_checksum.digest())
+                f.write(chunk_hashes_checksum.digest())
+                f.write(file_checksum.digest())
 
 
     def save_and_open(self, path):

@@ -29,6 +29,7 @@ def make_argparser():
     excl.add_argument('-p', '--pipe', dest='pipe_output', action='store_true', help='Write file contents to stdout')
     excl.add_argument('-x', '--extract', dest='out_location', type=str, help='Extract files to directory')
 
+    info.add_argument('-cv', '--create-version', dest='create_version', type=int, choices=(1,2), default=2, help='Create VPK with this version')
     info.add_argument('-nd', '--no-directories', dest='makedir', action='store_false', help="Don't create directries during extraction")
     info.add_argument('-pe', '--path-encoding', dest='path_enc', default='utf-8', metavar='ENC', type=str, help='File paths encoding')
 
@@ -160,7 +161,9 @@ def create_vpk(args):
     if not os.path.isdir(args.create):
         raise IOError("not a directory: %s" % repr(args.create))
 
-    vpk.new(args.create, path_enc=args.path_enc).save(args.file)
+    new_vpk = vpk.new(args.create, path_enc=args.path_enc)
+    new_vpk.version = args.create_version
+    new_vpk.save(args.file)
 
 
 def run(args):
