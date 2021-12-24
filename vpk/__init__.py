@@ -343,7 +343,13 @@ class VPK(object):
                 raise ValueError("Invalid header, or unsupported version")
 
     def calculate_checksums(self):
-        assert self.version == 2, "Checksum only work for VPK version 2"
+        """
+        Calculates MD5 checksums for file. Only for version 2
+
+        Note: individual files can be verified on both versions
+        """
+        if not self.version == 2:
+            raise ValueError("VPK checksums only supported on version 2")
 
         tree_checksum = md5()
         chunk_hashes_checksum = md5()
@@ -372,6 +378,18 @@ class VPK(object):
             file_checksum.update(f.read(16*2))
 
         return tree_checksum.digest(), chunk_hashes_checksum.digest(), file_checksum.digest()
+
+    def verify(self):
+        """
+        Verify VPK file. Only for version 2
+        """
+        tree_checksum, chunk_hashes_checksum, file_checksum = self.calculate_checksums()
+
+        if (self.tree_checksum != tree_checksum
+           or self.chunk_hashes_checksum != chunk_hashes_checksum
+           or self.file_checksum != file_checksum):
+            return False
+        return True
 
     def read_index(self):
         """
