@@ -79,13 +79,11 @@ A command line utility is also included
 
 .. code:: text
 
-    usage: vpk [-h] [--version] [-l] [-la] [-x OUT_LOCATION] [-nd] [-t] [-c DIR]
-               [-p] [-f WILDCARD | -re REGEX | -name WILDCARD] [-v]
-               file
+    usage: vpk [-h] [--version] [-l | -la | -t | -c DIR | -p | -x OUT_LOCATION] [-cv {1,2}] [-nd] [-pe ENC] [-f WILDCARD | -re REGEX | -name WILDCARD] [-v] file
 
     Manage Valve Pak files
 
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
       --version             show program's version number and exit
 
@@ -93,13 +91,17 @@ A command line utility is also included
       file                  Input VPK file
       -l, --list            List file paths
       -la                   List file paths, crc, size
-      -x OUT_LOCATION, --extract OUT_LOCATION
-                            Extract files to directory
-      -nd, --no-directories
-                            Don't create directries during extraction
       -t, --test            Verify contents
       -c DIR, --create DIR  Create VPK file from directory
       -p, --pipe            Write file contents to stdout
+      -x OUT_LOCATION, --extract OUT_LOCATION
+                            Extract files to directory
+      -cv {1,2}, --create-version {1,2}
+                            Create VPK with this version
+      -nd, --no-directories
+                            Don't create directries during extraction
+      -pe ENC, --path-encoding ENC
+                            File paths encoding
 
     Filters:
       -f WILDCARD, --filter WILDCARD
@@ -108,7 +110,7 @@ A command line utility is also included
                             Regular expression filter for file paths
       -name WILDCARD        Filename wildcard filter
       -v, --invert-match    Use filters for exclusion
-
+    
 
 Looking to decompile Valve custom asset formats?
 ------------------------------------------------
